@@ -2,7 +2,10 @@ module irctc
 
 go 1.22.0
 
-require github.com/chromedp/chromedp v0.9.5
+require (
+	github.com/chromedp/chromedp v0.9.5
+	github.com/joho/godotenv v1.5.1
+)
 
 require (
 	github.com/chromedp/cdproto v0.0.0-20240214232516-ad4608604e9e // indirect
