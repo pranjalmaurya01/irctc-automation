@@ -34,7 +34,6 @@ var opts = append(chromedp.DefaultExecAllocatorOptions[:],
 )
 
 func main() {
-
 	godotenv.Load()
 	username := os.Getenv("USERNAME")
 	password := os.Getenv("PASSWORD")
@@ -59,12 +58,16 @@ func main() {
 		chromedp.AttributeValue(`img.captcha-img`, "src", &captcha_base64, &ok),
 	)
 
+	// save capcha in png file
 	png := strings.Split(captcha_base64, ",")[1]
 	imageData, _ := base64.StdEncoding.DecodeString(png)
 	os.WriteFile("temp.png", imageData, 0644)
 
 	cmd := exec.Command("gocr", "temp.png")
-	output, _ := cmd.CombinedOutput()
+	output, cmd_err := cmd.CombinedOutput()
+	if cmd_err != nil {
+		log.Fatal("please install `gocr` package")
+	}
 	capcha_val := string(output)
 
 	// Login
