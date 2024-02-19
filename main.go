@@ -11,6 +11,7 @@ import (
 	"time"
 
 	vision "cloud.google.com/go/vision/apiv1"
+	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/chromedp"
 	"github.com/chromedp/chromedp/kb"
 	"github.com/joho/godotenv"
@@ -22,6 +23,7 @@ var tomorrow = currentTime.AddDate(0, 0, 1)
 var src = "lko"
 var dest = "ndls"
 var jDate = tomorrow.Format("02/01/2006")
+var train_number = "20503"
 
 var opts = append(chromedp.DefaultExecAllocatorOptions[:],
 	chromedp.Flag("headless", false),
@@ -53,9 +55,17 @@ func main() {
 	FillJourneyDate(ctx)
 	FillJourneyQuota(ctx)
 
-	if err := chromedp.Run(ctx,
+	chromedp.Run(ctx,
 		chromedp.KeyEvent(kb.Enter),
 		chromedp.Click("button.search_btn.train_Search", chromedp.ByQuery),
+	)
+
+	var res *cdp.Node
+	if err := chromedp.Run(ctx,
+		chromedp.WaitVisible(`div.col-sm-5.col-xs-11.train-heading strong`),
+		chromedp.Sleep(1*time.Second),
+		chromedp.Evaluate(fmt.Sprintf(`const x = document.querySelectorAll("div.col-sm-5.col-xs-11.train-heading strong");const y = [...x];const z=y.map(e=>e.innerText.substring(e.innerText.indexOf('(')+1,e.innerText.length-1));const idx = z.indexOf("%s"); console.log(x[idx]?.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" })); x[idx];
+		`, train_number), &res),
 	); err != nil {
 		fmt.Println(err)
 	}
@@ -65,7 +75,6 @@ func main() {
 	); err != nil {
 		fmt.Println(err)
 	}
-
 }
 
 func detectText() (string, error) {
@@ -142,7 +151,7 @@ func SolveCaptcha(ctx context.Context) {
 		chromedp.WaitVisible("img.captcha-img"),
 		chromedp.Focus(`input#captcha`),
 		chromedp.SendKeys(`input#captcha`, output, chromedp.ByQuery),
-		chromedp.KeyEvent(kb.Enter),
+		chromedp.Click(`div.modal-body button`),
 		// chromedp.WaitNotVisible(`div.my-loading.ng-star-inserted`),
 	)
 
