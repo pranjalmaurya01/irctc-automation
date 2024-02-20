@@ -27,10 +27,10 @@ var train_number = "20503"
 
 var opts = append(chromedp.DefaultExecAllocatorOptions[:],
 	chromedp.Flag("headless", false),
-	chromedp.Flag("disable-gpu", false),
+	chromedp.Flag("disable-gpu", true),
 	chromedp.Flag("enable-automation", false),
 	chromedp.Flag("disable-extensions", false),
-	chromedp.Flag("enable-automation", true),
+	// chromedp.Flag("enable-automation", true),
 
 	chromedp.WindowSize(1350, 1000),
 )
@@ -56,7 +56,6 @@ func main() {
 	FillJourneyQuota(ctx)
 
 	chromedp.Run(ctx,
-		chromedp.KeyEvent(kb.Enter),
 		chromedp.Click("button.search_btn.train_Search", chromedp.ByQuery),
 	)
 
@@ -148,25 +147,13 @@ func SolveCaptcha(ctx context.Context) {
 	fmt.Println("captcha", captcha_count, output)
 
 	chromedp.Run(ctx,
-		chromedp.WaitVisible("img.captcha-img"),
-		chromedp.Focus(`input#captcha`),
+		chromedp.WaitReady("img.captcha-img", chromedp.ByQuery),
+		chromedp.SetValue(`input#captcha`, "", chromedp.ByQuery),
 		chromedp.SendKeys(`input#captcha`, output, chromedp.ByQuery),
-		chromedp.Click(`div.modal-body button`),
+		chromedp.Click(`div.modal-body button.search_btn.train_Search`, chromedp.ByQuery),
 		// chromedp.WaitNotVisible(`div.my-loading.ng-star-inserted`),
 	)
 
-	var is_err string
-	chromedp.Run(ctx,
-		chromedp.InnerHTML(`div.loginError`, &is_err),
-	)
-
-	if is_err == "Invalid Captcha...." {
-		SolveCaptcha(ctx)
-		return
-	}
-	if is_err == "Invalid User" {
-		FillLoginForm(ctx)
-	}
 }
 
 func FillLoginForm(ctx context.Context) {
@@ -178,12 +165,28 @@ func FillLoginForm(ctx context.Context) {
 		chromedp.WaitVisible("a.loginText"),
 		chromedp.Click("a.loginText", chromedp.ByQuery),
 		chromedp.WaitReady(`input[formcontrolname="userid"]`),
+
+		chromedp.SetValue(`input[formcontrolname="userid"]`, "", chromedp.ByQuery),
+		chromedp.SetValue(`input[formcontrolname="password"]`, "", chromedp.ByQuery),
+
 		chromedp.SetValue(`input[formcontrolname="userid"]`, username, chromedp.ByQuery),
-		chromedp.SetValue(`input[formcontrolname="password"]`, password, chromedp.ByQuery),
 		chromedp.SetValue(`input[formcontrolname="password"]`, password, chromedp.ByQuery),
 	)
 
 	SolveCaptcha(ctx)
+
+	var is_err string
+	chromedp.Run(ctx,
+		chromedp.TextContent(`div.loginError`, &is_err, chromedp.ByQuery, chromedp.NodeVisible),
+	)
+	fmt.Println(is_err)
+	if is_err == "Invalid Captcha...." || is_err == "Invalid Captcha....Please Enter Valid Captcha" {
+		SolveCaptcha(ctx)
+		return
+	}
+	if is_err == "Invalid User" {
+		FillLoginForm(ctx)
+	}
 }
 
 func FillOriginField(ctx context.Context) {
@@ -223,5 +226,6 @@ func FillJourneyQuota(ctx context.Context) {
 		chromedp.Click(`p-dropdown#journeyQuota div`, chromedp.ByQuery),
 		chromedp.Sleep(1*time.Second),
 		chromedp.KeyEvent("t"),
+		chromedp.KeyEvent(kb.Enter),
 	)
 }
